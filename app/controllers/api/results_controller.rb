@@ -1,19 +1,18 @@
 class Api::ResultsController < ApplicationController
   def upload_results
-    @results = []
+    @files_content = []
     params[:results].each do |result|
       file = File.open(result.path, 'r')
       content = file.first.split("\r")
-      return results_response('false', 'Failed') unless content_validator(content)
+      return results_response('false', 'Wrong format') unless content_validator(content)
+
+      @files_content.push(content)
     end
     results_response('true', 'Success')
   end
 
   def content_validator(content)
-    byebug
-    if content.first == 'BASKETBALL' && sport_format_validator(content)
-      @results.push(content)
-    elsif content.first == 'HANDBALL' && sport_format_validator(content)
+    if (Sports::SPORTS_NAMES.include? content.first) && sport_format_validator(content)
       @results.push(content)
     else
       false
@@ -25,9 +24,8 @@ class Api::ResultsController < ApplicationController
   end
 
   def sport_format_validator(content)
-    line_elements = content.first == 'BASKETBALL' ? 8 : 7
     content.drop(1).each do |element|
-      break unless element.split(";").size == line_elements
+      break unless element.split(";").size == "Sports::#{content.first}_ELEMENTS".constantize
     end
   end
 end
