@@ -5,15 +5,17 @@ class Api::ResultsController < ApplicationController
       file = File.open(result.path, 'r')
       content = file.first.split("\r")
       return results_response('false', 'Wrong format') unless content_validator(content)
-
-      @files_content.push(content)
     end
-    results_response('true', 'Success')
+
+    mvp = "#{@files_content.first.first.downcase.camelize}Calculator".constantize.calculate(@files_content)
+    # Check if all contents from the same sport or not
+    # rescue from exceptions , in case empty param or anything wrong
+    results_response('true', "MVP of #{@files_content.first.first} tournament is : #{mvp}")
   end
 
   def content_validator(content)
     if (Sports::SPORTS_NAMES.include? content.first) && sport_format_validator(content)
-      @results.push(content)
+      @files_content.push(content)
     else
       false
     end
@@ -25,6 +27,7 @@ class Api::ResultsController < ApplicationController
 
   def sport_format_validator(content)
     content.drop(1).each do |element|
+      # false instead of break
       break unless element.split(";").size == "Sports::#{content.first}_ELEMENTS".constantize
     end
   end
