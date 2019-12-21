@@ -5,15 +5,19 @@ class Api::ResultsController < ApplicationController
     params[:results].each do |result|
       file = File.open(result.path, 'r')
       content = file.first.split("\r")
+      @match_palyers = []
+
       return results_response('false', 'Wrong format') unless content_validator(content)
+
+      return results_response('false', 'Same player cannot play in different positions in same match') unless @match_palyers.uniq.size == 6 
     end
     return results_response('false', 'All matches should be from the same sport') unless @files_sports_names.uniq.size == 1
 
     mvp = Sports.calculate(@files_content)
-    # Check if all contents from the same sport or not
-    # rescue from exceptions , in case empty param or anything wrong
-    # abstract logic into sports calculator
-    results_response('true', "MVP of #{@files_content.first.first} tournament is : #{mvp}")
+
+    results_response(mvp[0], mvp[1])
+  rescue StandardError => e
+    results_response('false', 'Failure')
   end
 
   def content_validator(content)
@@ -31,8 +35,10 @@ class Api::ResultsController < ApplicationController
   def sport_format_validator(content)
     @files_sports_names.push(content.first)
     content.drop(1).each do |element|
-      # use false instead of break
-      break unless element.split(";").size == "Sports::#{content.first}_ELEMENTS".constantize
+      elements_array = element.split(";")
+      break unless elements_array.size == "Sports::#{content.first}_ELEMENTS".constantize
+
+      @match_palyers.push(elements_array[1])
     end
   end
 end
